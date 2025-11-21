@@ -143,14 +143,6 @@ func checkInternalLink(link *scanner.Link, rootDir string, baseURL string, clien
 		return nil
 	}
 	
-	// Resolve relative path
-	var fullPath string
-	if filepath.IsAbs(linkPath) {
-		fullPath = filepath.Join(rootDir, linkPath)
-	} else {
-		fullPath = filepath.Join(rootDir, linkPath)
-	}
-	
 	// If base URL is provided, check the link online instead of locally
 	if baseURL != "" {
 		// Construct the full URL
@@ -167,20 +159,71 @@ func checkInternalLink(link *scanner.Link, rootDir string, baseURL string, clien
 		link.StatusCode = tempLink.StatusCode
 		link.ErrorMessage = tempLink.ErrorMessage
 	} else {
-		// Check if file exists locally
-		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
-			link.StatusCode = 404
-			link.ErrorMessage = "File not found"
-		} else if err != nil {
-			link.StatusCode = 0
-			link.ErrorMessage = err.Error()
-		} else {
+		// Check if file exists locally using Hugo conventions
+		found := checkHugoFile(linkPath, rootDir)
+		if found {
 			link.StatusCode = 200
 			link.ErrorMessage = ""
+		} else {
+			link.StatusCode = 404
+			link.ErrorMessage = "File not found"
 		}
 	}
 	
 	return nil
+}
+
+// checkHugoFile checks if a file exists using Hugo's conventions
+func checkHugoFile(linkPath string, rootDir string) bool {
+	// Clean the path
+	linkPath = strings.TrimPrefix(linkPath, "/")
+	
+	// List of possible file locations to check
+	var candidatePaths []string
+	
+	// 1. Direct path in root directory
+	candidatePaths = append(candidatePaths, filepath.Join(rootDir, linkPath))
+	
+	// 2. Static directory (for images and other assets)
+	candidatePaths = append(candidatePaths, filepath.Join(rootDir, "static", linkPath))
+	
+	// 3. Content directory (for markdown files)
+	candidatePaths = append(candidatePaths, filepath.Join(rootDir, "content", linkPath))
+	
+	// 4. Hugo URL transformation: /example/ -> content/example.md or content/example/index.md
+	if strings.HasSuffix(linkPath, "/") {
+		basePath := strings.TrimSuffix(linkPath, "/")
+		
+		// Try content/example.md
+		candidatePaths = append(candidatePaths, filepath.Join(rootDir, "content", basePath+".md"))
+		
+		// Try content/example/index.md
+		candidatePaths = append(candidatePaths, filepath.Join(rootDir, "content", basePath, "index.md"))
+		
+		// Try content/example/_index.md (for list pages)
+		candidatePaths = append(candidatePaths, filepath.Join(rootDir, "content", basePath, "_index.md"))
+	}
+	
+	// 5. If no trailing slash, also try the Hugo transformations
+	if !strings.HasSuffix(linkPath, "/") && !strings.Contains(filepath.Base(linkPath), ".") {
+		// Try content/example.md
+		candidatePaths = append(candidatePaths, filepath.Join(rootDir, "content", linkPath+".md"))
+		
+		// Try content/example/index.md
+		candidatePaths = append(candidatePaths, filepath.Join(rootDir, "content", linkPath, "index.md"))
+		
+		// Try content/example/_index.md
+		candidatePaths = append(candidatePaths, filepath.Join(rootDir, "content", linkPath, "_index.md"))
+	}
+	
+	// Check each candidate path
+	for _, path := range candidatePaths {
+		if _, err := os.Stat(path); err == nil {
+			return true
+		}
+	}
+	
+	return false
 }
 
 // CountBrokenLinks returns the number of broken links across all files
