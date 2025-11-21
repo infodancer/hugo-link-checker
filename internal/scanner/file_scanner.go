@@ -27,8 +27,12 @@ func EnumerateFiles(rootDir string, extensions []string) (map[string]*File, erro
 			return err
 		}
 		
-		// Skip directories
+		// Skip directories, but check for "public" directory to skip entirely
 		if info.IsDir() {
+			// Skip the "public" directory and all its contents
+			if info.Name() == "public" {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 		
