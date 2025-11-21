@@ -23,6 +23,14 @@ func CheckLinks(files []*scanner.File, rootDir string, checkExternal bool, baseU
 		for i := range file.Links {
 			link := &file.Links[i]
 			
+			// Skip links with Hugo template syntax
+			if strings.Contains(link.URL, "{{") || strings.Contains(link.URL, "}}") {
+				link.StatusCode = 200
+				link.ErrorMessage = ""
+				link.LastChecked = time.Now()
+				continue
+			}
+			
 			if link.Type == scanner.LinkTypeExternal {
 				if checkExternal {
 					if strings.HasPrefix(link.URL, "mailto:") {
