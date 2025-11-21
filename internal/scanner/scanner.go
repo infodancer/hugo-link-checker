@@ -1,8 +1,12 @@
 package scanner
 
 import (
+	"bufio"
+	"fmt"
 	"net/url"
+	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -60,4 +64,84 @@ func NewLink(linkURL string) Link {
 		URL:  linkURL,
 		Type: linkType,
 	}
+}
+
+// ParseLinksFromFile reads a markdown file and extracts all links using regex
+func ParseLinksFromFile(file *File) error {
+	// Regular expressions for different markdown link formats
+	// [text](url) - standard markdown links
+	// [text](url "title") - links with titles
+	// <url> - autolinks
+	// [text][ref] and [ref]: url - reference links (we'll capture the URL part)
+	linkRegexes := []*regexp.Regexp{
+		regexp.MustCompile(`\[([^\]]*)\]\(([^)]+)\)`),           // [text](url)
+		regexp.MustCompile(`<(https?://[^>]+)>`),                // <http://example.com>
+		regexp.MustCompile(`^\s*\[([^\]]+)\]:\s*(.+)$`),         // [ref]: url (reference definitions)
+	}
+	
+	// Open the file
+	f, err := os.Open(file.Path)
+	if err != nil {
+		return fmt.Errorf("failed to open file %s: %w", file.Path, err)
+	}
+	defer f.Close()
+	
+	// Track unique links to avoid duplicates
+	linkMap := make(map[string]bool)
+	
+	// Read file line by line
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := scanner.Text()
+		
+		// Apply each regex to find links
+		for _, regex := range linkRegexes {
+			matches := regex.FindAllStringSubmatch(line, -1)
+			for _, match := range matches {
+				var linkURL string
+				if len(match) >= 3 {
+					// For [text](url) format, URL is in match[2]
+					linkURL = strings.TrimSpace(match[2])
+				} else if len(match) >= 2 {
+					// For <url> format, URL is in match[1]
+					linkURL = strings.TrimSpace(match[1])
+				}
+				
+				if linkURL == "" {
+					continue
+				}
+				
+				// Remove any title part from the URL (everything after first space or quote)
+				if spaceIdx := strings.Index(linkURL, " "); spaceIdx != -1 {
+					linkURL = linkURL[:spaceIdx]
+				}
+				if quoteIdx := strings.Index(linkURL, `"`); quoteIdx != -1 {
+					linkURL = linkURL[:quoteIdx]
+				}
+				
+				linkURL = strings.TrimSpace(linkURL)
+				
+				// Skip empty URLs or fragment-only links
+				if linkURL == "" || linkURL == "#" {
+					continue
+				}
+				
+				// Check if we've already seen this link
+				if linkMap[linkURL] {
+					continue
+				}
+				linkMap[linkURL] = true
+				
+				// Create and add the link
+				link := NewLink(linkURL)
+				file.Links = append(file.Links, link)
+			}
+		}
+	}
+	
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("error reading file %s: %w", file.Path, err)
+	}
+	
+	return nil
 }

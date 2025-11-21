@@ -27,7 +27,24 @@ func main() {
     }
     
     fmt.Printf("Found %d unique markdown files\n", len(files))
+    
+    // Parse links from each file
     for _, file := range scanner.GetFileList(files) {
-        fmt.Printf("File: %s (canonical: %s)\n", file.Path, file.CanonicalPath)
+        err := scanner.ParseLinksFromFile(file)
+        if err != nil {
+            fmt.Fprintf(os.Stderr, "Error parsing links from %s: %v\n", file.Path, err)
+            continue
+        }
+        
+        fmt.Printf("File: %s (canonical: %s) - %d links found\n", 
+            file.Path, file.CanonicalPath, len(file.Links))
+        
+        for _, link := range file.Links {
+            linkType := "internal"
+            if link.Type == scanner.LinkTypeExternal {
+                linkType = "external"
+            }
+            fmt.Printf("  %s (%s)\n", link.URL, linkType)
+        }
     }
 }
