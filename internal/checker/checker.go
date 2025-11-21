@@ -188,65 +188,105 @@ func checkHugoFileVerbose(linkPath string, rootDir string, verbose bool) (bool, 
 	// Clean the path
 	linkPath = strings.TrimPrefix(linkPath, "/")
 	
+	// Detect if we're scanning from within a Hugo content directory
+	// and adjust the root to be the Hugo site root
+	hugoSiteRoot := rootDir
+	if strings.Contains(rootDir, "/content/") {
+		// Find the Hugo site root by going up to the directory containing "content"
+		parts := strings.Split(rootDir, "/content/")
+		if len(parts) > 0 {
+			hugoSiteRoot = parts[0]
+		}
+	}
+	
 	// List of possible file locations to check
 	var candidatePaths []string
 	
 	// 1. Direct path in root directory
 	candidatePaths = append(candidatePaths, filepath.Join(rootDir, linkPath))
 	
-	// 2. Static directory (for images and other assets)
+	// 2. If we detected a Hugo site root different from rootDir, check there too
+	if hugoSiteRoot != rootDir {
+		candidatePaths = append(candidatePaths, filepath.Join(hugoSiteRoot, linkPath))
+	}
+	
+	// 3. Static directory (for images and other assets)
 	candidatePaths = append(candidatePaths, filepath.Join(rootDir, "static", linkPath))
+	candidatePaths = append(candidatePaths, filepath.Join(hugoSiteRoot, "static", linkPath))
 	
-	// 3. Content directory (for markdown files)
+	// 4. Content directory (for markdown files)
 	candidatePaths = append(candidatePaths, filepath.Join(rootDir, "content", linkPath))
+	candidatePaths = append(candidatePaths, filepath.Join(hugoSiteRoot, "content", linkPath))
 	
-	// 4. Hugo URL transformation: /example/ -> content/example.md or content/example/index.md
+	// 5. Hugo URL transformation: /example/ -> content/example.md or content/example/index.md
 	if strings.HasSuffix(linkPath, "/") {
 		basePath := strings.TrimSuffix(linkPath, "/")
 		
 		// Try content/example.md
 		candidatePaths = append(candidatePaths, filepath.Join(rootDir, "content", basePath+".md"))
+		candidatePaths = append(candidatePaths, filepath.Join(hugoSiteRoot, "content", basePath+".md"))
 		
 		// Try content/example/index.md
 		candidatePaths = append(candidatePaths, filepath.Join(rootDir, "content", basePath, "index.md"))
+		candidatePaths = append(candidatePaths, filepath.Join(hugoSiteRoot, "content", basePath, "index.md"))
 		
 		// Try content/example/_index.md (for list pages)
 		candidatePaths = append(candidatePaths, filepath.Join(rootDir, "content", basePath, "_index.md"))
+		candidatePaths = append(candidatePaths, filepath.Join(hugoSiteRoot, "content", basePath, "_index.md"))
 		
 		// Try direct path as .md file (for when root is already in content)
 		candidatePaths = append(candidatePaths, filepath.Join(rootDir, basePath+".md"))
+		candidatePaths = append(candidatePaths, filepath.Join(hugoSiteRoot, basePath+".md"))
 		
 		// Try direct path with index.md (for when root is already in content)
 		candidatePaths = append(candidatePaths, filepath.Join(rootDir, basePath, "index.md"))
+		candidatePaths = append(candidatePaths, filepath.Join(hugoSiteRoot, basePath, "index.md"))
 		
 		// Try direct path with _index.md (for when root is already in content)
 		candidatePaths = append(candidatePaths, filepath.Join(rootDir, basePath, "_index.md"))
+		candidatePaths = append(candidatePaths, filepath.Join(hugoSiteRoot, basePath, "_index.md"))
 	}
 	
-	// 5. If no trailing slash, also try the Hugo transformations
+	// 6. If no trailing slash, also try the Hugo transformations
 	if !strings.HasSuffix(linkPath, "/") && !strings.Contains(filepath.Base(linkPath), ".") {
 		// Try content/example.md
 		candidatePaths = append(candidatePaths, filepath.Join(rootDir, "content", linkPath+".md"))
+		candidatePaths = append(candidatePaths, filepath.Join(hugoSiteRoot, "content", linkPath+".md"))
 		
 		// Try content/example/index.md
 		candidatePaths = append(candidatePaths, filepath.Join(rootDir, "content", linkPath, "index.md"))
+		candidatePaths = append(candidatePaths, filepath.Join(hugoSiteRoot, "content", linkPath, "index.md"))
 		
 		// Try content/example/_index.md
 		candidatePaths = append(candidatePaths, filepath.Join(rootDir, "content", linkPath, "_index.md"))
+		candidatePaths = append(candidatePaths, filepath.Join(hugoSiteRoot, "content", linkPath, "_index.md"))
 		
 		// Try direct path as .md file (for when root is already in content)
 		candidatePaths = append(candidatePaths, filepath.Join(rootDir, linkPath+".md"))
+		candidatePaths = append(candidatePaths, filepath.Join(hugoSiteRoot, linkPath+".md"))
 		
 		// Try direct path with index.md (for when root is already in content)
 		candidatePaths = append(candidatePaths, filepath.Join(rootDir, linkPath, "index.md"))
+		candidatePaths = append(candidatePaths, filepath.Join(hugoSiteRoot, linkPath, "index.md"))
 		
 		// Try direct path with _index.md (for when root is already in content)
 		candidatePaths = append(candidatePaths, filepath.Join(rootDir, linkPath, "_index.md"))
+		candidatePaths = append(candidatePaths, filepath.Join(hugoSiteRoot, linkPath, "_index.md"))
+	}
+	
+	// Deduplicate candidate paths
+	seen := make(map[string]bool)
+	var uniquePaths []string
+	for _, path := range candidatePaths {
+		if !seen[path] {
+			seen[path] = true
+			uniquePaths = append(uniquePaths, path)
+		}
 	}
 	
 	// Check each candidate path
 	var checkedPaths []string
-	for _, path := range candidatePaths {
+	for _, path := range uniquePaths {
 		if verbose {
 			checkedPaths = append(checkedPaths, path)
 		}
