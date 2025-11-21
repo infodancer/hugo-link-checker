@@ -43,7 +43,7 @@ func isInternalLink(linkURL string) bool {
 		return true
 	}
 	
-	// If it has a scheme (http, https, etc.) or host, it's external
+	// If it has a scheme (http, https, mailto, etc.) or host, it's external
 	if u.Scheme != "" || u.Host != "" {
 		return false
 	}

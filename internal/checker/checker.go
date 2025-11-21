@@ -2,7 +2,9 @@ package checker
 
 import (
 	"fmt"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,9 +24,16 @@ func CheckLinks(files []*scanner.File, rootDir string) error {
 			link := &file.Links[i]
 			
 			if link.Type == scanner.LinkTypeExternal {
-				err := checkExternalLink(client, link)
-				if err != nil {
-					return fmt.Errorf("error checking external link %s: %v", link.URL, err)
+				if strings.HasPrefix(link.URL, "mailto:") {
+					err := checkMailtoLink(link)
+					if err != nil {
+						return fmt.Errorf("error checking mailto link %s: %v", link.URL, err)
+					}
+				} else {
+					err := checkExternalLink(client, link)
+					if err != nil {
+						return fmt.Errorf("error checking external link %s: %v", link.URL, err)
+					}
 				}
 			} else {
 				err := checkInternalLink(link, rootDir)
@@ -37,6 +46,50 @@ func CheckLinks(files []*scanner.File, rootDir string) error {
 		}
 	}
 	
+	return nil
+}
+
+func checkMailtoLink(link *scanner.Link) error {
+	// Parse the mailto URL
+	u, err := url.Parse(link.URL)
+	if err != nil {
+		link.StatusCode = 0
+		link.ErrorMessage = "Invalid mailto URL"
+		return nil
+	}
+	
+	// Extract email address
+	email := u.Opaque
+	if email == "" {
+		link.StatusCode = 0
+		link.ErrorMessage = "No email address in mailto URL"
+		return nil
+	}
+	
+	// Extract domain from email
+	parts := strings.Split(email, "@")
+	if len(parts) != 2 {
+		link.StatusCode = 0
+		link.ErrorMessage = "Invalid email format"
+		return nil
+	}
+	
+	domain := parts[1]
+	
+	// Look up MX records for the domain
+	_, err = net.LookupMX(domain)
+	if err != nil {
+		// If MX lookup fails, try A record lookup as fallback
+		_, err = net.LookupHost(domain)
+		if err != nil {
+			link.StatusCode = 0
+			link.ErrorMessage = fmt.Sprintf("Domain not found: %s", domain)
+			return nil
+		}
+	}
+	
+	link.StatusCode = 200
+	link.ErrorMessage = ""
 	return nil
 }
 
