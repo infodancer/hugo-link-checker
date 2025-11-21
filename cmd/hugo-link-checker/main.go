@@ -5,13 +5,26 @@ import (
     "fmt"
     "os"
 
+    "github.com/infodancer/hugo-link-checker/internal/checker"
+    "github.com/infodancer/hugo-link-checker/internal/reporter"
     "github.com/infodancer/hugo-link-checker/internal/scanner"
     "github.com/infodancer/hugo-link-checker/internal/version"
 )
 
 func main() {
-    var showVersion bool
+    var (
+        showVersion bool
+        outputFile  string
+        format      string
+        noReport    bool
+        rootDir     string
+    )
+    
     flag.BoolVar(&showVersion, "version", false, "Print version and exit")
+    flag.StringVar(&outputFile, "output", "", "Output file for report (default: stdout)")
+    flag.StringVar(&format, "format", "text", "Report format: text, json, html")
+    flag.BoolVar(&noReport, "no-report", false, "Don't generate report, just return exit code based on broken links")
+    flag.StringVar(&rootDir, "root", ".", "Root directory to scan")
     flag.Parse()
 
     if showVersion {
@@ -19,32 +32,74 @@ func main() {
         os.Exit(0)
     }
 
-    // Example usage of the file scanner
-    files, err := scanner.EnumerateFiles(".", []string{".md", ".html", ".htm"})
+    // Validate format
+    var reportFormat reporter.ReportFormat
+    switch format {
+    case "text":
+        reportFormat = reporter.FormatText
+    case "json":
+        reportFormat = reporter.FormatJSON
+    case "html":
+        reportFormat = reporter.FormatHTML
+    default:
+        fmt.Fprintf(os.Stderr, "Invalid format: %s. Valid formats: text, json, html\n", format)
+        os.Exit(1)
+    }
+
+    // Scan for files
+    files, err := scanner.EnumerateFiles(rootDir, []string{".md", ".html", ".htm"})
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error scanning files: %v\n", err)
         os.Exit(1)
     }
     
-    fmt.Printf("Found %d unique files\n", len(files))
+    fileList := scanner.GetFileList(files)
     
     // Parse links from each file
-    for _, file := range scanner.GetFileList(files) {
+    for _, file := range fileList {
         err := scanner.ParseLinksFromFile(file)
         if err != nil {
             fmt.Fprintf(os.Stderr, "Error parsing links from %s: %v\n", file.Path, err)
             continue
         }
-        
-        fmt.Printf("File: %s (canonical: %s) - %d links found\n", 
-            file.Path, file.CanonicalPath, len(file.Links))
-        
-        for _, link := range file.Links {
-            linkType := "internal"
-            if link.Type == scanner.LinkTypeExternal {
-                linkType = "external"
-            }
-            fmt.Printf("  %s (%s)\n", link.URL, linkType)
+    }
+    
+    // Check all links
+    err = checker.CheckLinks(fileList, rootDir)
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error checking links: %v\n", err)
+        os.Exit(1)
+    }
+    
+    // Count broken links
+    brokenCount := checker.CountBrokenLinks(fileList)
+    
+    if noReport {
+        // Just exit with the number of broken links as exit code
+        // Cap at 255 for valid exit codes
+        if brokenCount > 255 {
+            os.Exit(255)
         }
+        os.Exit(brokenCount)
+    }
+    
+    // Generate report
+    reportOptions := reporter.ReportOptions{
+        Format:     reportFormat,
+        OutputFile: outputFile,
+    }
+    
+    err = reporter.GenerateReport(fileList, reportOptions)
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error generating report: %v\n", err)
+        os.Exit(1)
+    }
+    
+    // Exit with error code if broken links found
+    if brokenCount > 0 {
+        if brokenCount > 255 {
+            os.Exit(255)
+        }
+        os.Exit(brokenCount)
     }
 }
