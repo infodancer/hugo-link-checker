@@ -14,7 +14,7 @@ import (
 )
 
 // CheckLinks validates all links in the provided files
-func CheckLinks(files []*scanner.File, rootDir string, checkExternal bool) error {
+func CheckLinks(files []*scanner.File, rootDir string, checkExternal bool, baseURL string) error {
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
@@ -42,7 +42,7 @@ func CheckLinks(files []*scanner.File, rootDir string, checkExternal bool) error
 					link.ErrorMessage = "External link checking disabled"
 				}
 			} else {
-				err := checkInternalLink(link, rootDir)
+				err := checkInternalLink(link, rootDir, baseURL, client)
 				if err != nil {
 					return fmt.Errorf("error checking internal link %s: %v", link.URL, err)
 				}
@@ -122,7 +122,7 @@ func checkExternalLink(client *http.Client, link *scanner.Link) error {
 	return nil
 }
 
-func checkInternalLink(link *scanner.Link, rootDir string) error {
+func checkInternalLink(link *scanner.Link, rootDir string, baseURL string, client *http.Client) error {
 	// Clean and resolve the path
 	linkPath := link.URL
 	
@@ -151,16 +151,33 @@ func checkInternalLink(link *scanner.Link, rootDir string) error {
 		fullPath = filepath.Join(rootDir, linkPath)
 	}
 	
-	// Check if file exists
-	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
-		link.StatusCode = 404
-		link.ErrorMessage = "File not found"
-	} else if err != nil {
-		link.StatusCode = 0
-		link.ErrorMessage = err.Error()
+	// If base URL is provided, check the link online instead of locally
+	if baseURL != "" {
+		// Construct the full URL
+		fullURL := strings.TrimRight(baseURL, "/") + "/" + strings.TrimLeft(linkPath, "/")
+		
+		// Create a temporary link to check online
+		tempLink := &scanner.Link{URL: fullURL}
+		err := checkExternalLink(client, tempLink)
+		if err != nil {
+			return err
+		}
+		
+		// Copy the results back to the original link
+		link.StatusCode = tempLink.StatusCode
+		link.ErrorMessage = tempLink.ErrorMessage
 	} else {
-		link.StatusCode = 200
-		link.ErrorMessage = ""
+		// Check if file exists locally
+		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+			link.StatusCode = 404
+			link.ErrorMessage = "File not found"
+		} else if err != nil {
+			link.StatusCode = 0
+			link.ErrorMessage = err.Error()
+		} else {
+			link.StatusCode = 200
+			link.ErrorMessage = ""
+		}
 	}
 	
 	return nil
