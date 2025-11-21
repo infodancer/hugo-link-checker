@@ -18,6 +18,7 @@ func main() {
         format      string
         noReport    bool
         rootDir     string
+        checkImages bool
     )
     
     flag.BoolVar(&showVersion, "version", false, "Print version and exit")
@@ -25,6 +26,7 @@ func main() {
     flag.StringVar(&format, "format", "text", "Report format: text, json, html")
     flag.BoolVar(&noReport, "no-report", false, "Don't generate report, just return exit code based on broken links")
     flag.StringVar(&rootDir, "root", ".", "Root directory to scan")
+    flag.BoolVar(&checkImages, "check-images", false, "Check image links (img src, markdown images)")
     flag.Parse()
 
     if showVersion {
@@ -57,7 +59,7 @@ func main() {
     
     // Parse links from each file
     for _, file := range fileList {
-        err := scanner.ParseLinksFromFile(file)
+        err := scanner.ParseLinksFromFile(file, checkImages)
         if err != nil {
             fmt.Fprintf(os.Stderr, "Error parsing links from %s: %v\n", file.Path, err)
             continue

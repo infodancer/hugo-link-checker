@@ -66,7 +66,7 @@ func NewLink(linkURL string) Link {
 }
 
 // ParseLinksFromFile reads a file and extracts all links using regex
-func ParseLinksFromFile(file *File) error {
+func ParseLinksFromFile(file *File, checkImages bool) error {
 	// Regular expressions for different link formats
 	// Markdown: [text](url), <url>, [ref]: url
 	// HTML: <a href="url">, <link href="url">
@@ -76,6 +76,15 @@ func ParseLinksFromFile(file *File) error {
 		regexp.MustCompile(`^\s*\[([^\]]+)\]:\s*(.+)$`),         // [ref]: url - markdown reference definitions
 		regexp.MustCompile(`<a\s+[^>]*href\s*=\s*["']([^"']+)["'][^>]*>`), // <a href="url"> - HTML
 		regexp.MustCompile(`<link\s+[^>]*href\s*=\s*["']([^"']+)["'][^>]*>`), // <link href="url"> - HTML
+	}
+	
+	// Add image link patterns if image checking is enabled
+	if checkImages {
+		imageRegexes := []*regexp.Regexp{
+			regexp.MustCompile(`!\[([^\]]*)\]\(([^)]+)\)`),          // ![alt](url) - markdown images
+			regexp.MustCompile(`<img\s+[^>]*src\s*=\s*["']([^"']+)["'][^>]*>`), // <img src="url"> - HTML images
+		}
+		linkRegexes = append(linkRegexes, imageRegexes...)
 	}
 	
 	// Open the file
