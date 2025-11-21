@@ -32,6 +32,12 @@ func EnumerateFiles(rootDir string, extension string) (map[string]*File, error) 
 			return nil
 		}
 		
+		// Skip files beginning with a dot
+		filename := filepath.Base(path)
+		if strings.HasPrefix(filename, ".") {
+			return nil
+		}
+		
 		// Get canonical path to ensure uniqueness
 		canonicalPath, err := filepath.Abs(path)
 		if err != nil {
