@@ -50,11 +50,24 @@ func main() {
         os.Exit(1)
     }
 
-    // Scan for files
-    files, err := scanner.EnumerateFiles(rootDir, []string{".md", ".html", ".htm"})
-    if err != nil {
-        fmt.Fprintf(os.Stderr, "Error scanning files: %v\n", err)
-        os.Exit(1)
+    // Get paths to scan from command line arguments, or use root directory if none specified
+    pathsToScan := flag.Args()
+    if len(pathsToScan) == 0 {
+        pathsToScan = []string{rootDir}
+    }
+    
+    // Scan for files in specified paths
+    files := make(map[string]*scanner.File)
+    for _, path := range pathsToScan {
+        pathFiles, err := scanner.EnumerateFiles(path, []string{".md", ".html", ".htm"})
+        if err != nil {
+            fmt.Fprintf(os.Stderr, "Error scanning files in %s: %v\n", path, err)
+            os.Exit(1)
+        }
+        // Merge files from this path into the main files map
+        for k, v := range pathFiles {
+            files[k] = v
+        }
     }
     
     fileList := scanner.GetFileList(files)
