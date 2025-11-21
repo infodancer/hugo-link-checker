@@ -13,12 +13,13 @@ import (
 
 func main() {
     var (
-        showVersion bool
-        outputFile  string
-        format      string
-        noReport    bool
-        rootDir     string
-        checkImages bool
+        showVersion   bool
+        outputFile    string
+        format        string
+        noReport      bool
+        rootDir       string
+        checkImages   bool
+        checkExternal bool
     )
     
     flag.BoolVar(&showVersion, "version", false, "Print version and exit")
@@ -27,6 +28,7 @@ func main() {
     flag.BoolVar(&noReport, "no-report", false, "Don't generate report, just return exit code based on broken links")
     flag.StringVar(&rootDir, "root", ".", "Root directory to scan")
     flag.BoolVar(&checkImages, "check-images", false, "Check image links (img src, markdown images)")
+    flag.BoolVar(&checkExternal, "check-external", false, "Check external links (default: only check internal links)")
     flag.Parse()
 
     if showVersion {
@@ -67,7 +69,7 @@ func main() {
     }
     
     // Check all links
-    err = checker.CheckLinks(fileList, rootDir)
+    err = checker.CheckLinks(fileList, rootDir, checkExternal)
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error checking links: %v\n", err)
         os.Exit(1)

@@ -14,7 +14,7 @@ import (
 )
 
 // CheckLinks validates all links in the provided files
-func CheckLinks(files []*scanner.File, rootDir string) error {
+func CheckLinks(files []*scanner.File, rootDir string, checkExternal bool) error {
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
@@ -24,16 +24,22 @@ func CheckLinks(files []*scanner.File, rootDir string) error {
 			link := &file.Links[i]
 			
 			if link.Type == scanner.LinkTypeExternal {
-				if strings.HasPrefix(link.URL, "mailto:") {
-					err := checkMailtoLink(link)
-					if err != nil {
-						return fmt.Errorf("error checking mailto link %s: %v", link.URL, err)
+				if checkExternal {
+					if strings.HasPrefix(link.URL, "mailto:") {
+						err := checkMailtoLink(link)
+						if err != nil {
+							return fmt.Errorf("error checking mailto link %s: %v", link.URL, err)
+						}
+					} else {
+						err := checkExternalLink(client, link)
+						if err != nil {
+							return fmt.Errorf("error checking external link %s: %v", link.URL, err)
+						}
 					}
 				} else {
-					err := checkExternalLink(client, link)
-					if err != nil {
-						return fmt.Errorf("error checking external link %s: %v", link.URL, err)
-					}
+					// Skip external link checking, mark as unchecked
+					link.StatusCode = 0
+					link.ErrorMessage = "External link checking disabled"
 				}
 			} else {
 				err := checkInternalLink(link, rootDir)
