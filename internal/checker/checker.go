@@ -176,7 +176,7 @@ func checkInternalLink(link *scanner.Link, rootDir string, checkPublic bool, bas
 			found, checkedPaths = checkPublicFileVerbose(linkPath, rootDir, verbose)
 		} else {
 			// Check using standard Hugo source conventions
-			found, checkedPaths = checkHugoFileVerbose(linkPath, rootDir, verbose)
+			found, checkedPaths = checkHugoFile(linkPath, rootDir, verbose)
 		}
 		
 		if found {
@@ -195,14 +195,8 @@ func checkInternalLink(link *scanner.Link, rootDir string, checkPublic bool, bas
 	return nil
 }
 
-// checkHugoFile checks if a file exists using Hugo's conventions
-func checkHugoFile(linkPath string, rootDir string) bool {
-	found, _ := checkHugoFileVerbose(linkPath, rootDir, false)
-	return found
-}
-
-// checkHugoFileVerbose checks if a file exists using Hugo's conventions and optionally returns checked paths
-func checkHugoFileVerbose(linkPath string, rootDir string, verbose bool) (bool, []string) {
+// checkHugoFile checks if a file exists using Hugo's conventions and optionally returns checked paths
+func checkHugoFile(linkPath string, rootDir string, verbose bool) (bool, []string) {
 	// Clean the path
 	linkPath = strings.TrimPrefix(linkPath, "/")
 	
