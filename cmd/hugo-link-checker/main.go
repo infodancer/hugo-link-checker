@@ -98,6 +98,15 @@ func main() {
         
         // Apply ignore patterns
         applyIgnorePatterns(file, ignorePatterns)
+        
+        // Debug: Print ignored links if verbose
+        if verbose {
+            for _, link := range file.Links {
+                if link.Ignored {
+                    fmt.Fprintf(os.Stderr, "DEBUG: Ignored link: %s in file %s\n", link.URL, file.Path)
+                }
+            }
+        }
     }
     
     // Check all links
@@ -189,6 +198,7 @@ func applyIgnorePatterns(file *scanner.File, patterns []*regexp.Regexp) {
         for _, pattern := range patterns {
             if pattern.MatchString(link.URL) {
                 link.Ignored = true
+                fmt.Fprintf(os.Stderr, "DEBUG: Ignoring link %s (matched pattern %s)\n", link.URL, pattern.String())
                 break
             }
         }
