@@ -101,7 +101,7 @@ func main() {
     }
     
     // Check all links
-    err := checker.CheckLinks(fileList, rootDir, checkExternal, checkPublic, baseURL, verbose)
+    err = checker.CheckLinks(fileList, rootDir, checkExternal, checkPublic, baseURL, verbose)
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error checking links: %v\n", err)
         os.Exit(1)
