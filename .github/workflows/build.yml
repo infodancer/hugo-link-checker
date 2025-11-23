@@ -45,5 +45,5 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: hugo-link-checker-${{ matrix.os }}-${{ matrix.arch }}
+          name: hugo-link-checker-${{ matrix.os }}-${{ matrix.arch }}-${{ github.run_id }}
           path: dist/hugo-link-checker-${{ matrix.os }}-${{ matrix.arch }}*
