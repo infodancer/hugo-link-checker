@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -75,20 +76,35 @@ func GenerateReport(files []*scanner.File, options ReportOptions) error {
 func generateTextReport(files []*scanner.File, writer io.Writer) error {
 	summary := calculateSummary(files)
 	
+	// Sort files by absolute path
+	sortedFiles := make([]*scanner.File, len(files))
+	copy(sortedFiles, files)
+	sort.Slice(sortedFiles, func(i, j int) bool {
+		absPathI, _ := filepath.Abs(sortedFiles[i].Path)
+		absPathJ, _ := filepath.Abs(sortedFiles[j].Path)
+		return absPathI < absPathJ
+	})
+	
+	// Check if we're writing to stdout
+	isStdout := writer == os.Stdout
+	
 	fmt.Fprintf(writer, "Hugo Link Checker Report\n")
 	fmt.Fprintf(writer, "========================\n")
 	fmt.Fprintf(writer, "Generated: %s\n\n", time.Now().Format(time.RFC3339))
 	
-	fmt.Fprintf(writer, "Summary:\n")
-	fmt.Fprintf(writer, "  Files scanned: %d\n", summary.TotalFiles)
-	fmt.Fprintf(writer, "  Total links: %d\n", summary.TotalLinks)
-	fmt.Fprintf(writer, "  Unique links: %d\n", summary.UniqueLinks)
-	fmt.Fprintf(writer, "  Broken links: %d\n", summary.BrokenLinks)
-	fmt.Fprintf(writer, "  Internal links: %d\n", summary.InternalLinks)
-	fmt.Fprintf(writer, "  External links: %d\n\n", summary.ExternalLinks)
+	// Show summary at the beginning only if not writing to stdout
+	if !isStdout {
+		fmt.Fprintf(writer, "Summary:\n")
+		fmt.Fprintf(writer, "  Files scanned: %d\n", summary.TotalFiles)
+		fmt.Fprintf(writer, "  Total links: %d\n", summary.TotalLinks)
+		fmt.Fprintf(writer, "  Unique links: %d\n", summary.UniqueLinks)
+		fmt.Fprintf(writer, "  Broken links: %d\n", summary.BrokenLinks)
+		fmt.Fprintf(writer, "  Internal links: %d\n", summary.InternalLinks)
+		fmt.Fprintf(writer, "  External links: %d\n\n", summary.ExternalLinks)
+	}
 	
 	// Filter files to only show markdown/HTML files with broken links
-	for _, file := range files {
+	for _, file := range sortedFiles {
 		if !isMarkdownOrHTML(file.Path) {
 			continue
 		}
@@ -127,6 +143,17 @@ func generateTextReport(files []*scanner.File, writer io.Writer) error {
 		fmt.Fprintf(writer, "\n")
 	}
 	
+	// Show summary at the end if writing to stdout
+	if isStdout {
+		fmt.Fprintf(writer, "Summary:\n")
+		fmt.Fprintf(writer, "  Files scanned: %d\n", summary.TotalFiles)
+		fmt.Fprintf(writer, "  Total links: %d\n", summary.TotalLinks)
+		fmt.Fprintf(writer, "  Unique links: %d\n", summary.UniqueLinks)
+		fmt.Fprintf(writer, "  Broken links: %d\n", summary.BrokenLinks)
+		fmt.Fprintf(writer, "  Internal links: %d\n", summary.InternalLinks)
+		fmt.Fprintf(writer, "  External links: %d\n", summary.ExternalLinks)
+	}
+	
 	return nil
 }
 
@@ -147,6 +174,15 @@ func generateJSONReport(files []*scanner.File, writer io.Writer) error {
 
 func generateHTMLReport(files []*scanner.File, writer io.Writer) error {
 	summary := calculateSummary(files)
+	
+	// Sort files by absolute path
+	sortedFiles := make([]*scanner.File, len(files))
+	copy(sortedFiles, files)
+	sort.Slice(sortedFiles, func(i, j int) bool {
+		absPathI, _ := filepath.Abs(sortedFiles[i].Path)
+		absPathJ, _ := filepath.Abs(sortedFiles[j].Path)
+		return absPathI < absPathJ
+	})
 	
 	fmt.Fprintf(writer, `<!DOCTYPE html>
 <html>
@@ -182,7 +218,7 @@ func generateHTMLReport(files []*scanner.File, writer io.Writer) error {
 `, time.Now().Format(time.RFC3339), summary.TotalFiles, summary.TotalLinks, 
    summary.UniqueLinks, summary.BrokenLinks, summary.InternalLinks, summary.ExternalLinks)
 	
-	for _, file := range files {
+	for _, file := range sortedFiles {
 		fmt.Fprintf(writer, `    <div class="file">
         <h3>%s</h3>
         <p><strong>Canonical:</strong> %s</p>
