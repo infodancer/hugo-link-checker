@@ -23,6 +23,14 @@ func CheckLinks(files []*scanner.File, rootDir string, checkExternal bool, check
 		for i := range file.Links {
 			link := &file.Links[i]
 			
+			// Skip ignored links
+			if link.Ignored {
+				link.StatusCode = 200
+				link.ErrorMessage = ""
+				link.LastChecked = time.Now()
+				continue
+			}
+			
 			// Skip links with Hugo template syntax
 			if strings.Contains(link.URL, "{{") || strings.Contains(link.URL, "}}") {
 				link.StatusCode = 200
@@ -416,6 +424,10 @@ func CountBrokenLinks(files []*scanner.File) int {
 	count := 0
 	for _, file := range files {
 		for _, link := range file.Links {
+			// Skip ignored links when counting broken links
+			if link.Ignored {
+				continue
+			}
 			if link.StatusCode >= 400 || (link.StatusCode == 0 && link.ErrorMessage != "") {
 				count++
 			}

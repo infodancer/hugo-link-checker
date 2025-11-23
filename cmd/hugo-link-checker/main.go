@@ -1,9 +1,12 @@
 package main
 
 import (
+    "bufio"
     "flag"
     "fmt"
     "os"
+    "regexp"
+    "strings"
 
     "github.com/infodancer/hugo-link-checker/internal/checker"
     "github.com/infodancer/hugo-link-checker/internal/reporter"
@@ -78,6 +81,13 @@ func main() {
     
     fileList := scanner.GetFileList(files)
     
+    // Load ignore patterns
+    ignorePatterns, err := loadIgnorePatterns()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error loading ignore patterns: %v\n", err)
+        os.Exit(1)
+    }
+    
     // Parse links from each file
     for _, file := range fileList {
         err := scanner.ParseLinksFromFile(file, checkImages)
@@ -85,6 +95,9 @@ func main() {
             fmt.Fprintf(os.Stderr, "Error parsing links from %s: %v\n", file.Path, err)
             continue
         }
+        
+        // Apply ignore patterns
+        applyIgnorePatterns(file, ignorePatterns)
     }
     
     // Check all links
@@ -124,5 +137,60 @@ func main() {
             os.Exit(255)
         }
         os.Exit(brokenCount)
+    }
+}
+
+// loadIgnorePatterns reads the .hugo-link-checker-ignore file and returns compiled regex patterns
+func loadIgnorePatterns() ([]*regexp.Regexp, error) {
+    file, err := os.Open(".hugo-link-checker-ignore")
+    if err != nil {
+        if os.IsNotExist(err) {
+            // Ignore file doesn't exist, return empty patterns
+            return nil, nil
+        }
+        return nil, err
+    }
+    defer file.Close()
+    
+    var patterns []*regexp.Regexp
+    scanner := bufio.NewScanner(file)
+    
+    for scanner.Scan() {
+        line := strings.TrimSpace(scanner.Text())
+        
+        // Skip empty lines and comments (lines starting with #)
+        if line == "" || strings.HasPrefix(line, "#") {
+            continue
+        }
+        
+        // Compile the regex pattern
+        pattern, err := regexp.Compile(line)
+        if err != nil {
+            fmt.Fprintf(os.Stderr, "Warning: Invalid regex pattern '%s': %v\n", line, err)
+            continue
+        }
+        
+        patterns = append(patterns, pattern)
+    }
+    
+    if err := scanner.Err(); err != nil {
+        return nil, err
+    }
+    
+    return patterns, nil
+}
+
+// applyIgnorePatterns marks links as ignored if they match any ignore pattern
+func applyIgnorePatterns(file *scanner.File, patterns []*regexp.Regexp) {
+    for i := range file.Links {
+        link := &file.Links[i]
+        
+        // Check if this link matches any ignore pattern
+        for _, pattern := range patterns {
+            if pattern.MatchString(link.URL) {
+                link.Ignored = true
+                break
+            }
+        }
     }
 }
