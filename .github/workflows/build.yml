@@ -34,8 +34,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          os="${{ matrix.os }}"
-          arch="${{ matrix.arch }}"
+          os="${{ matrix.os-arch.os }}"
+          arch="${{ matrix.os-arch.arch }}"
           ext=""
           if [ "${os}" = "windows" ]; then ext=".exe"; fi
           mkdir -p dist
@@ -45,5 +45,5 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: hugo-link-checker-${{ matrix.os }}-${{ matrix.arch }}-${{ github.run_id }}
-          path: dist/hugo-link-checker-${{ matrix.os }}-${{ matrix.arch }}*
+          name: hugo-link-checker-${{ matrix.os-arch.os }}-${{ matrix.os-arch.arch }}
+          path: dist/hugo-link-checker-${{ matrix.os-arch.os }}-${{ matrix.os-arch.arch }}*
