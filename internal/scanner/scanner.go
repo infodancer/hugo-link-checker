@@ -43,6 +43,11 @@ func isInternalLink(linkURL string) bool {
 		return true
 	}
 	
+	// Explicitly check for https:// links - they are external
+	if u.Scheme == "https" {
+		return false
+	}
+	
 	// If it has a scheme (http, https, mailto, etc.) or host, it's external
 	if u.Scheme != "" || u.Host != "" {
 		return false
