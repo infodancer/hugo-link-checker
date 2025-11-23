@@ -37,16 +37,15 @@ type File struct {
 
 // isInternalLink determines if a link is internal (relative) or external
 func isInternalLink(linkURL string) bool {
-	// Parse the URL
-	u, err := url.Parse(linkURL)
+	// Clean the URL by removing angle brackets and other wrapper characters
+	cleanURL := strings.Trim(linkURL, "<>")
+	cleanURL = strings.TrimSpace(cleanURL)
+	
+	// Parse the cleaned URL
+	u, err := url.Parse(cleanURL)
 	if err != nil {
 		// If we can't parse it, treat as internal for safety
 		return true
-	}
-	
-	// Explicitly check for https:// links - they are external
-	if u.Scheme == "https" {
-		return false
 	}
 	
 	// If it has a scheme (http, https, mailto, etc.) or host, it's external
@@ -133,6 +132,8 @@ func ParseLinksFromFile(file *File, checkImages bool) error {
 					linkURL = linkURL[:quoteIdx]
 				}
 				
+				// Clean the URL by removing angle brackets and trimming whitespace
+				linkURL = strings.Trim(linkURL, "<>")
 				linkURL = strings.TrimSpace(linkURL)
 				
 				// Skip empty URLs or fragment-only links
