@@ -33,7 +33,7 @@ func TestCheckLinks_HugoTemplateSyntax(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	err = CheckLinks(files, tmpDir, false, "", false)
+	err = CheckLinks(files, tmpDir, false, false, "", false)
 	if err != nil {
 		t.Fatalf("CheckLinks failed: %v", err)
 	}
@@ -169,7 +169,7 @@ func TestCheckInternalLink_LocalFiles(t *testing.T) {
 
 	for _, tc := range testCases {
 		link := &scanner.Link{URL: tc.url, Type: scanner.LinkTypeInternal}
-		err := checkInternalLink(link, tmpDir, "", client, false)
+		err := checkInternalLink(link, tmpDir, false, "", client, false)
 		if err != nil {
 			t.Errorf("Unexpected error checking %s: %v", tc.url, err)
 			continue
@@ -209,7 +209,7 @@ func TestCheckInternalLink_WithBaseURL(t *testing.T) {
 
 	for _, tc := range testCases {
 		link := &scanner.Link{URL: tc.url, Type: scanner.LinkTypeInternal}
-		err := checkInternalLink(link, "", server.URL, client, false)
+		err := checkInternalLink(link, "", false, server.URL, client, false)
 		if err != nil {
 			t.Errorf("Unexpected error checking %s: %v", tc.url, err)
 			continue
@@ -266,7 +266,7 @@ func TestCheckHugoFile(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		result := checkHugoFile(tc.linkPath, tmpDir)
+		result, _ := checkHugoFile(tc.linkPath, tmpDir, false)
 		if result != tc.expected {
 			t.Errorf("%s: expected %v, got %v", tc.description, tc.expected, result)
 		}
@@ -282,7 +282,7 @@ func TestCheckHugoFileVerbose(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 
 	// Test verbose mode returns checked paths
-	found, checkedPaths := checkHugoFileVerbose("nonexistent/", tmpDir, true)
+	found, checkedPaths := checkHugoFile("nonexistent/", tmpDir, true)
 	
 	if found {
 		t.Error("Expected file not to be found")
@@ -293,7 +293,7 @@ func TestCheckHugoFileVerbose(t *testing.T) {
 	}
 
 	// Test non-verbose mode doesn't return paths
-	found, checkedPaths = checkHugoFileVerbose("nonexistent/", tmpDir, false)
+	found, checkedPaths = checkHugoFile("nonexistent/", tmpDir, false)
 	
 	if found {
 		t.Error("Expected file not to be found")
@@ -365,7 +365,7 @@ func TestCheckLinks_Integration(t *testing.T) {
 		},
 	}
 
-	err = CheckLinks(files, tmpDir, false, "", false)
+	err = CheckLinks(files, tmpDir, false, false, "", false)
 	if err != nil {
 		t.Fatalf("CheckLinks failed: %v", err)
 	}

@@ -53,7 +53,7 @@ And an internal [relative link](./relative.md) too.
 	}
 
 	// Parse links
-	err = ParseLinksFromFile(file)
+	err = ParseLinksFromFile(file, false)
 	if err != nil {
 		t.Fatalf("ParseLinksFromFile failed: %v", err)
 	}
@@ -137,7 +137,7 @@ func TestParseLinksFromHTMLFile(t *testing.T) {
 	}
 
 	// Parse links
-	err = ParseLinksFromFile(file)
+	err = ParseLinksFromFile(file, false)
 	if err != nil {
 		t.Fatalf("ParseLinksFromFile failed: %v", err)
 	}
