@@ -1,12 +1,12 @@
 Source: hugo-link-checker
 Section: utils
 Priority: optional
-Maintainer: Hugo Link Checker Team <matthew@infodancer.org>
+Maintainer: Matthew Hunter <matthew@infodancer.org>
 Build-Depends: debhelper-compat (= 13), dh-golang, golang-go
 Standards-Version: 4.6.0
-Homepage: https://github.com/your-org/hugo-link-checker
-Vcs-Git: https://github.com/your-org/hugo-link-checker.git
-Vcs-Browser: https://github.com/your-org/hugo-link-checker
+Homepage: https://github.com/infodancer/hugo-link-checker
+Vcs-Git: https://github.com/infodancer/hugo-link-checker.git
+Vcs-Browser: https://github.com/infodancer/hugo-link-checker
 
 Package: hugo-link-checker
 Architecture: any
