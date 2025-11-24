@@ -132,13 +132,21 @@ func TestCheckInternalLink_LocalFiles(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() {
+		if err := os.RemoveAll(tmpDir); err != nil {
+			t.Logf("Warning: failed to remove temp dir: %v", err)
+		}
+	}()
 
 	// Create test files
 	contentDir := filepath.Join(tmpDir, "content")
 	staticDir := filepath.Join(tmpDir, "static")
-	os.MkdirAll(contentDir, 0755)
-	os.MkdirAll(staticDir, 0755)
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatalf("Failed to create content directory: %v", err)
+	}
+	if err := os.MkdirAll(staticDir, 0755); err != nil {
+		t.Fatalf("Failed to create static directory: %v", err)
+	}
 
 	// Create some test files
 	testFiles := []string{
