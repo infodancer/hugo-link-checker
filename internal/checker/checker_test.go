@@ -275,7 +275,9 @@ func TestCheckHugoFile(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create test file %s: %v", file, err)
 		}
-		f.Close()
+		if err := f.Close(); err != nil {
+			t.Fatalf("Failed to close test file %s: %v", file, err)
+		}
 	}
 
 	testCases := []struct {
