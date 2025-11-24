@@ -144,7 +144,9 @@ func TestCheckInternalLink_LocalFiles(t *testing.T) {
 	}
 
 	for _, file := range testFiles {
-		os.MkdirAll(filepath.Dir(file), 0755)
+		if err := os.MkdirAll(filepath.Dir(file), 0755); err != nil {
+			t.Fatalf("Failed to create directory for %s: %v", file, err)
+		}
 		f, err := os.Create(file)
 		if err != nil {
 			t.Fatalf("Failed to create test file %s: %v", file, err)
@@ -232,8 +234,12 @@ func TestCheckHugoFile(t *testing.T) {
 	// Create Hugo directory structure
 	contentDir := filepath.Join(tmpDir, "content")
 	staticDir := filepath.Join(tmpDir, "static")
-	os.MkdirAll(contentDir, 0755)
-	os.MkdirAll(staticDir, 0755)
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatalf("Failed to create content directory: %v", err)
+	}
+	if err := os.MkdirAll(staticDir, 0755); err != nil {
+		t.Fatalf("Failed to create static directory: %v", err)
+	}
 
 	// Create test files
 	testFiles := []string{
@@ -244,7 +250,9 @@ func TestCheckHugoFile(t *testing.T) {
 	}
 
 	for _, file := range testFiles {
-		os.MkdirAll(filepath.Dir(file), 0755)
+		if err := os.MkdirAll(filepath.Dir(file), 0755); err != nil {
+			t.Fatalf("Failed to create directory for %s: %v", file, err)
+		}
 		f, err := os.Create(file)
 		if err != nil {
 			t.Fatalf("Failed to create test file %s: %v", file, err)
@@ -342,7 +350,9 @@ func TestCheckLinks_Integration(t *testing.T) {
 
 	// Create Hugo directory structure
 	contentDir := filepath.Join(tmpDir, "content")
-	os.MkdirAll(contentDir, 0755)
+	if err := os.MkdirAll(contentDir, 0755); err != nil {
+		t.Fatalf("Failed to create content directory: %v", err)
+	}
 
 	// Create a test file
 	testFile := filepath.Join(contentDir, "about.md")
