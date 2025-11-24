@@ -92,9 +92,13 @@ jobs:
 
       - name: Create Debian package
         run: |
-          # Set version from git tag or use default
-          VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "0.1.0")
-          VERSION=${VERSION#v}  # Remove 'v' prefix if present
+          # Extract version from source code
+          VERSION=$(grep 'var Version = ' internal/version/version.go | sed 's/.*"\(.*\)".*/\1/')
+          if [ -z "$VERSION" ]; then
+            echo "Error: Could not extract version from source code"
+            exit 1
+          fi
+          echo "Using version from source: $VERSION"
           
           # Create package directory structure
           PKG_DIR="hugo-link-checker_${VERSION}_${{ matrix.arch }}"
