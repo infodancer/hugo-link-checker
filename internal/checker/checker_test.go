@@ -243,7 +243,11 @@ func TestCheckHugoFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() {
+		if err := os.RemoveAll(tmpDir); err != nil {
+			t.Logf("Warning: failed to remove temp dir: %v", err)
+		}
+	}()
 
 	// Create Hugo directory structure
 	contentDir := filepath.Join(tmpDir, "content")
@@ -301,7 +305,11 @@ func TestCheckHugoFileVerbose(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() {
+		if err := os.RemoveAll(tmpDir); err != nil {
+			t.Logf("Warning: failed to remove temp dir: %v", err)
+		}
+	}()
 
 	// Test verbose mode returns checked paths
 	found, checkedPaths := checkHugoFile("nonexistent/", tmpDir, true)
@@ -360,7 +368,11 @@ func TestCheckLinks_Integration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() {
+		if err := os.RemoveAll(tmpDir); err != nil {
+			t.Logf("Warning: failed to remove temp dir: %v", err)
+		}
+	}()
 
 	// Create Hugo directory structure
 	contentDir := filepath.Join(tmpDir, "content")

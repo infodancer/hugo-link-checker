@@ -104,13 +104,27 @@ func generateTextReport(files []*scanner.File, writer io.Writer) error {
 	
 	// Show summary at the beginning only if not writing to stdout
 	if !isStdout {
-		fmt.Fprintf(writer, "Summary:\n")
-		fmt.Fprintf(writer, "  Files scanned: %d\n", summary.TotalFiles)
-		fmt.Fprintf(writer, "  Total links: %d\n", summary.TotalLinks)
-		fmt.Fprintf(writer, "  Unique links: %d\n", summary.UniqueLinks)
-		fmt.Fprintf(writer, "  Broken links: %d\n", summary.BrokenLinks)
-		fmt.Fprintf(writer, "  Internal links: %d\n", summary.InternalLinks)
-		fmt.Fprintf(writer, "  External links: %d\n\n", summary.ExternalLinks)
+		if _, err := fmt.Fprintf(writer, "Summary:\n"); err != nil {
+			return fmt.Errorf("failed to write summary: %v", err)
+		}
+		if _, err := fmt.Fprintf(writer, "  Files scanned: %d\n", summary.TotalFiles); err != nil {
+			return fmt.Errorf("failed to write summary: %v", err)
+		}
+		if _, err := fmt.Fprintf(writer, "  Total links: %d\n", summary.TotalLinks); err != nil {
+			return fmt.Errorf("failed to write summary: %v", err)
+		}
+		if _, err := fmt.Fprintf(writer, "  Unique links: %d\n", summary.UniqueLinks); err != nil {
+			return fmt.Errorf("failed to write summary: %v", err)
+		}
+		if _, err := fmt.Fprintf(writer, "  Broken links: %d\n", summary.BrokenLinks); err != nil {
+			return fmt.Errorf("failed to write summary: %v", err)
+		}
+		if _, err := fmt.Fprintf(writer, "  Internal links: %d\n", summary.InternalLinks); err != nil {
+			return fmt.Errorf("failed to write summary: %v", err)
+		}
+		if _, err := fmt.Fprintf(writer, "  External links: %d\n\n", summary.ExternalLinks); err != nil {
+			return fmt.Errorf("failed to write summary: %v", err)
+		}
 	}
 	
 	// Filter files to only show markdown/HTML files with broken links
