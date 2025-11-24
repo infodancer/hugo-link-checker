@@ -75,8 +75,8 @@ runs:
         
         DOWNLOAD_URL="https://github.com/${{ github.action_repository }}/releases/download/${LATEST_RELEASE}/${BINARY_NAME}"
         
-        echo "Downloading hugo-link-checker from: $DOWNLOAD_URL"
-        curl -L -o hugo-link-checker "$DOWNLOAD_URL"
+        echo "Downloading hugo-link-checker from: ${DOWNLOAD_URL}"
+        curl -L -o hugo-link-checker "${DOWNLOAD_URL}"
         chmod +x hugo-link-checker
         
         # Verify download
