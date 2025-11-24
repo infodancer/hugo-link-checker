@@ -59,7 +59,11 @@ func GenerateReport(files []*scanner.File, options ReportOptions) error {
 		if err != nil {
 			return fmt.Errorf("failed to create output file: %v", err)
 		}
-		defer file.Close()
+		defer func() {
+			if closeErr := file.Close(); closeErr != nil {
+				fmt.Fprintf(os.Stderr, "Warning: failed to close output file: %v\n", closeErr)
+			}
+		}()
 		writer = file
 	}
 	
@@ -88,9 +92,15 @@ func generateTextReport(files []*scanner.File, writer io.Writer) error {
 	// Check if we're writing to stdout
 	isStdout := writer == os.Stdout
 	
-	fmt.Fprintf(writer, "Hugo Link Checker Report\n")
-	fmt.Fprintf(writer, "========================\n")
-	fmt.Fprintf(writer, "Generated: %s\n\n", time.Now().Format(time.RFC3339))
+	if _, err := fmt.Fprintf(writer, "Hugo Link Checker Report\n"); err != nil {
+		return fmt.Errorf("failed to write report header: %v", err)
+	}
+	if _, err := fmt.Fprintf(writer, "========================\n"); err != nil {
+		return fmt.Errorf("failed to write report header: %v", err)
+	}
+	if _, err := fmt.Fprintf(writer, "Generated: %s\n\n", time.Now().Format(time.RFC3339)); err != nil {
+		return fmt.Errorf("failed to write report header: %v", err)
+	}
 	
 	// Show summary at the beginning only if not writing to stdout
 	if !isStdout {

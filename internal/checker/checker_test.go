@@ -31,7 +31,11 @@ func TestCheckLinks_HugoTemplateSyntax(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() {
+		if err := os.RemoveAll(tmpDir); err != nil {
+			t.Logf("Warning: failed to remove temp dir: %v", err)
+		}
+	}()
 
 	err = CheckLinks(files, tmpDir, false, false, "", false)
 	if err != nil {
@@ -151,7 +155,9 @@ func TestCheckInternalLink_LocalFiles(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create test file %s: %v", file, err)
 		}
-		f.Close()
+		if err := f.Close(); err != nil {
+			t.Fatalf("Failed to close test file %s: %v", file, err)
+		}
 	}
 
 	client := &http.Client{Timeout: 5 * time.Second}
@@ -360,7 +366,9 @@ func TestCheckLinks_Integration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
-	f.Close()
+	if err := f.Close(); err != nil {
+		t.Fatalf("Failed to close test file: %v", err)
+	}
 
 	// Create test files with various link types
 	files := []*scanner.File{
