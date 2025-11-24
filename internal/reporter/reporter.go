@@ -168,20 +168,38 @@ func generateTextReport(files []*scanner.File, writer io.Writer) error {
 				linkType = "external"
 			}
 			
-			fmt.Fprintf(writer, "    %s [%s] - %s\n", link.URL, linkType, status)
+			if _, err := fmt.Fprintf(writer, "    %s [%s] - %s\n", link.URL, linkType, status); err != nil {
+				return fmt.Errorf("failed to write link info: %v", err)
+			}
 		}
-		fmt.Fprintf(writer, "\n")
+		if _, err := fmt.Fprintf(writer, "\n"); err != nil {
+			return fmt.Errorf("failed to write newline: %v", err)
+		}
 	}
 	
 	// Show summary at the end if writing to stdout
 	if isStdout {
-		fmt.Fprintf(writer, "Summary:\n")
-		fmt.Fprintf(writer, "  Files scanned: %d\n", summary.TotalFiles)
-		fmt.Fprintf(writer, "  Total links: %d\n", summary.TotalLinks)
-		fmt.Fprintf(writer, "  Unique links: %d\n", summary.UniqueLinks)
-		fmt.Fprintf(writer, "  Broken links: %d\n", summary.BrokenLinks)
-		fmt.Fprintf(writer, "  Internal links: %d\n", summary.InternalLinks)
-		fmt.Fprintf(writer, "  External links: %d\n", summary.ExternalLinks)
+		if _, err := fmt.Fprintf(writer, "Summary:\n"); err != nil {
+			return fmt.Errorf("failed to write summary: %v", err)
+		}
+		if _, err := fmt.Fprintf(writer, "  Files scanned: %d\n", summary.TotalFiles); err != nil {
+			return fmt.Errorf("failed to write summary: %v", err)
+		}
+		if _, err := fmt.Fprintf(writer, "  Total links: %d\n", summary.TotalLinks); err != nil {
+			return fmt.Errorf("failed to write summary: %v", err)
+		}
+		if _, err := fmt.Fprintf(writer, "  Unique links: %d\n", summary.UniqueLinks); err != nil {
+			return fmt.Errorf("failed to write summary: %v", err)
+		}
+		if _, err := fmt.Fprintf(writer, "  Broken links: %d\n", summary.BrokenLinks); err != nil {
+			return fmt.Errorf("failed to write summary: %v", err)
+		}
+		if _, err := fmt.Fprintf(writer, "  Internal links: %d\n", summary.InternalLinks); err != nil {
+			return fmt.Errorf("failed to write summary: %v", err)
+		}
+		if _, err := fmt.Fprintf(writer, "  External links: %d\n", summary.ExternalLinks); err != nil {
+			return fmt.Errorf("failed to write summary: %v", err)
+		}
 	}
 	
 	return nil
